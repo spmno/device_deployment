@@ -57,21 +57,30 @@ export const DeviceDeployment: React.FC = () => {
                 <p className="text-gray-500 text-sm text-center py-4">所有设备已部署</p>
               ) : (
                 undeployedDevices.map((device) => (
-                  <div key={device.id} className="border rounded-lg p-3 hover:shadow-md transition-shadow">
-                    <h3 className="font-medium mb-1">{device.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{device.type}</p>
-                    <p className="text-sm text-gray-500 mb-3">
-                      覆盖范围: {device.coverageRange} 公里
-                    </p>
-                    <button
-                      onClick={() => handleSelectDevice(device)}
-                      disabled={deploymentMode && selectedDevice?.id !== device.id}
-                      className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {deploymentMode && selectedDevice?.id === device.id
-                        ? '已在部署中'
-                        : '选择部署'}
-                    </button>
+                  <div key={device.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                    {device.image && (
+                      <img
+                        src={device.image}
+                        alt={device.name}
+                        className="w-full h-32 object-cover"
+                      />
+                    )}
+                    <div className="p-3">
+                      <h3 className="font-medium mb-1">{device.name}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{device.type}</p>
+                      <p className="text-sm text-gray-500 mb-3">
+                        覆盖范围: {device.coverageRange} 公里
+                      </p>
+                      <button
+                        onClick={() => handleSelectDevice(device)}
+                        disabled={deploymentMode && selectedDevice?.id !== device.id}
+                        className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {deploymentMode && selectedDevice?.id === device.id
+                          ? '已在部署中'
+                          : '选择部署'}
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -86,23 +95,32 @@ export const DeviceDeployment: React.FC = () => {
                 <p className="text-gray-500 text-sm text-center py-4">暂无已部署设备</p>
               ) : (
                 deployedDevices.map((device) => (
-                  <div key={device.id} className="border rounded-lg p-3 hover:shadow-md transition-shadow">
-                    <h3 className="font-medium mb-1">{device.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{device.type}</p>
-                    <p className="text-sm text-gray-500 mb-2">
-                      覆盖范围: {device.coverageRange} 公里
-                    </p>
-                    {device.position && (
-                      <p className="text-sm text-gray-500 mb-3">
-                        位置: {device.position.lng.toFixed(4)}, {device.position.lat.toFixed(4)}
-                      </p>
+                  <div key={device.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                    {device.image && (
+                      <img
+                        src={device.image}
+                        alt={device.name}
+                        className="w-full h-32 object-cover"
+                      />
                     )}
-                    <button
-                      onClick={() => handleUndeploy(device)}
-                      className="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition-colors"
-                    >
-                      撤回部署
-                    </button>
+                    <div className="p-3">
+                      <h3 className="font-medium mb-1">{device.name}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{device.type}</p>
+                      <p className="text-sm text-gray-500 mb-2">
+                        覆盖范围: {device.coverageRange} 公里
+                      </p>
+                      {device.position && (
+                        <p className="text-sm text-gray-500 mb-3">
+                          位置: {device.position.lng.toFixed(4)}, {device.position.lat.toFixed(4)}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => handleUndeploy(device)}
+                        className="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition-colors"
+                      >
+                        撤回部署
+                      </button>
+                    </div>
                   </div>
                 ))
               )}

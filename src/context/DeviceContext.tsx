@@ -32,6 +32,7 @@ export const DeviceProvider: React.FC<DeviceProviderProps> = ({ children }) => {
       type: '通信基站',
       price: 50000,
       coverageRange: 10,
+      image: 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=400&h=300&fit=crop',
       deployed: false,
     },
     {
@@ -40,6 +41,7 @@ export const DeviceProvider: React.FC<DeviceProviderProps> = ({ children }) => {
       type: '环境监测',
       price: 20000,
       coverageRange: 5,
+      image: 'https://images.unsplash.com/photo-1581092921461-eab62e97a782?w=400&h=300&fit=crop',
       deployed: true,
       position: { lng: 116.397428, lat: 39.90923 },
     },
@@ -49,6 +51,7 @@ export const DeviceProvider: React.FC<DeviceProviderProps> = ({ children }) => {
       type: '充电设施',
       price: 80000,
       coverageRange: 15,
+      image: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=400&h=300&fit=crop',
       deployed: true,
       position: { lng: 116.407526, lat: 39.90403 },
     },

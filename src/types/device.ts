@@ -4,6 +4,7 @@ export interface Device {
   type: string;
   price: number;
   coverageRange: number; // 覆盖范围（公里）
+  image?: string; // 设备图片 URL
   deployed: boolean;
   position?: {
     lng: number; // 经度
@@ -16,6 +17,7 @@ export interface DeviceFormData {
   type: string;
   price: number;
   coverageRange: number;
+  image?: string; // 设备图片 URL
 }
 
 export type DeploymentData = {

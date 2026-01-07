@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import type { Device, DeviceFormData } from '@/types/device';
-import { Plus, Edit2, Trash2, MapPin, DollarSign, Ruler } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, DollarSign, Ruler, Upload, X } from 'lucide-react';
 
 interface DeviceFormProps {
   onSubmit: (data: DeviceFormData) => void;
@@ -21,13 +21,36 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
     type: initialData?.type || '',
     price: initialData?.price || 0,
     coverageRange: initialData?.coverageRange || 0,
+    image: initialData?.image || '',
   });
+  const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.image);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // 在实际项目中，这里应该上传到服务器并获取 URL
+      // 这里我们创建一个本地预览
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setFormData({ ...formData, image: result });
+        setImagePreview(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image: '' });
+    setImagePreview(undefined);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
     if (!onCancel) {
-      setFormData({ name: '', type: '', price: 0, coverageRange: 0 });
+      setFormData({ name: '', type: '', price: 0, coverageRange: 0, image: '' });
+      setImagePreview(undefined);
     }
   };
 
@@ -60,6 +83,61 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
           <option value="导航设备">导航设备</option>
           <option value="其他">其他</option>
         </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">设备图片</label>
+        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-500 transition-colors">
+          <div className="space-y-2 text-center">
+            {imagePreview ? (
+              <div className="relative">
+                <img
+                  src={imagePreview}
+                  alt="设备预览"
+                  className="w-full h-40 object-cover rounded-md"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="flex text-sm text-gray-600">
+                  <label
+                    htmlFor="image-upload"
+                    className="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 hover:text-blue-500"
+                  >
+                    <span>上传图片</span>
+                    <input
+                      id="image-upload"
+                      name="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
+                  <p className="pl-1">或输入图片 URL</p>
+                </div>
+                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+              </>
+            )}
+          </div>
+        </div>
+        {!imagePreview && (
+          <input
+            type="url"
+            value={formData.image || ''}
+            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+            className="mt-2 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="或直接输入图片 URL"
+          />
+        )}
       </div>
 
       <div>
@@ -117,49 +195,62 @@ interface DeviceCardProps {
 
 export const DeviceCard: React.FC<DeviceCardProps> = ({ device, onEdit, onDelete }) => {
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="text-lg font-semibold">{device.name}</h3>
-          <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mt-1">
-            {device.type}
-          </span>
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+      {/* 设备图片 */}
+      {device.image && (
+        <div className="w-full h-48 overflow-hidden bg-gray-100">
+          <img
+            src={device.image}
+            alt={device.name}
+            className="w-full h-full object-cover"
+          />
         </div>
-        <div className="flex gap-2">
-          {onEdit && (
-            <button
-              onClick={() => onEdit(device)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <Edit2 className="h-4 w-4 text-gray-600" />
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={() => onDelete(device.id)}
-              className="p-2 hover:bg-red-50 rounded-full transition-colors"
-            >
-              <Trash2 className="h-4 w-4 text-red-600" />
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
-      <div className="space-y-2 text-sm text-gray-600">
-        <div className="flex items-center gap-2">
-          <DollarSign className="h-4 w-4" />
-          <span>价格: ¥{device.price.toLocaleString()}</span>
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <h3 className="text-lg font-semibold">{device.name}</h3>
+            <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mt-1">
+              {device.type}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            {onEdit && (
+              <button
+                onClick={() => onEdit(device)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <Edit2 className="h-4 w-4 text-gray-600" />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={() => onDelete(device.id)}
+                className="p-2 hover:bg-red-50 rounded-full transition-colors"
+              >
+                <Trash2 className="h-4 w-4 text-red-600" />
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Ruler className="h-4 w-4" />
-          <span>覆盖范围: {device.coverageRange} 公里</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4" />
-          <span>
-            状态: {device.deployed ? '已部署' : '未部署'}
-            {device.position && ` (${device.position.lng.toFixed(4)}, ${device.position.lat.toFixed(4)})`}
-          </span>
+
+        <div className="space-y-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            <span>价格: ¥{device.price.toLocaleString()}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Ruler className="h-4 w-4" />
+            <span>覆盖范围: {device.coverageRange} 公里</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            <span>
+              状态: {device.deployed ? '已部署' : '未部署'}
+              {device.position && ` (${device.position.lng.toFixed(4)}, ${device.position.lat.toFixed(4)})`}
+            </span>
+          </div>
         </div>
       </div>
     </div>
