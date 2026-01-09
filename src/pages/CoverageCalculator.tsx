@@ -28,7 +28,6 @@ const DEVICE_PRESETS = [
 
 export const CoverageCalculator: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 配置参数
   const [areaSize, setAreaSize] = useState<number>(10); // 区域大小（公里）
@@ -55,29 +54,46 @@ export const CoverageCalculator: React.FC = () => {
     }
   };
 
-  // 处理数值输入变化
-  const handleNumberInput = (
+  // 处理数值输入变化（只更新字符串，不立即转换数字）
+  const handleNumberInputChange = (
+    value: string,
+    inputSetter: (val: string) => void
+  ) => {
+    // 始终更新输入字符串，允许用户自由输入
+    inputSetter(value);
+  };
+
+  // 处理输入框失去焦点（此时才转换数字）
+  const handleNumberBlur = (
     value: string,
     setter: (val: number) => void,
     inputSetter: (val: string) => void,
-    min: number = 0
+    min: number = 0,
+    defaultValue: number
   ) => {
-    // 始终更新输入字符串，允许用户自由输入和删除
-    inputSetter(value);
-
-    // 只有当值不为空时才尝试转换为数字
+    // 如果为空，使用默认值
     if (value.trim() === '') {
-      return; // 空值不更新数字状态
+      inputSetter(defaultValue.toString());
+      setter(defaultValue);
+      return;
     }
 
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= min) {
       setter(numValue);
+      inputSetter(numValue.toString()); // 格式化显示
+    } else {
+      // 无效值，恢复为默认值或之前的有效值
+      inputSetter(defaultValue.toString());
+      setter(defaultValue);
     }
+    // 注意：这里不触发计算，用户需要点击"重新计算"按钮
   };
 
   // 计算最优覆盖方案
   const calculateCoverage = useCallback(() => {
+    setIsCalculating(true);
+
     const radius = coverageRadius;
     const size = areaSize;
 
@@ -143,13 +159,6 @@ export const CoverageCalculator: React.FC = () => {
 
     setIsCalculating(false);
   }, [coverageRadius, areaSize, devicePrice]);
-
-  // 同步输入字符串值（当通过其他方式改变数值时）
-  useEffect(() => {
-    setCoverageRadiusInput(coverageRadius.toString());
-    setDevicePriceInput(devicePrice.toString());
-    setAreaSizeInput(areaSize.toString());
-  }, [coverageRadius, devicePrice, areaSize]);
 
   // 在Canvas上绘制覆盖图
   const drawCoverageMap = () => {
@@ -269,29 +278,6 @@ export const CoverageCalculator: React.FC = () => {
     ctx.fillText('设备位置', legendX + 75, legendY - 7);
   };
 
-  // 自动计算和绘制（带防抖）
-  useEffect(() => {
-    // 清除之前的定时器
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    // 设置加载状态
-    setIsCalculating(true);
-
-    // 防抖：延迟 500ms 后计算
-    debounceTimerRef.current = setTimeout(() => {
-      calculateCoverage();
-    }, 500);
-
-    // 清理函数
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [areaSize, coverageRadius, devicePrice, calculateCoverage]);
-
   useEffect(() => {
     drawCoverageMap();
   }, [result, coverageRadius]);
@@ -403,12 +389,11 @@ export const CoverageCalculator: React.FC = () => {
                 覆盖半径（公里）
               </label>
               <input
-                type="number"
-                min="0.1"
-                max="50"
-                step="0.1"
+                type="text"
+                inputMode="decimal"
                 value={coverageRadiusInput}
-                onChange={(e) => handleNumberInput(e.target.value, setCoverageRadius, setCoverageRadiusInput, 0.1)}
+                onChange={(e) => handleNumberInputChange(e.target.value, setCoverageRadiusInput)}
+                onBlur={(e) => handleNumberBlur(e.target.value, setCoverageRadius, setCoverageRadiusInput, 0.1, DEVICE_PRESETS[0].coverageRadius)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={isCalculating}
               />
@@ -423,11 +408,11 @@ export const CoverageCalculator: React.FC = () => {
                 设备价格（元）
               </label>
               <input
-                type="number"
-                min="0"
-                step="1000"
+                type="text"
+                inputMode="decimal"
                 value={devicePriceInput}
-                onChange={(e) => handleNumberInput(e.target.value, setDevicePrice, setDevicePriceInput, 0)}
+                onChange={(e) => handleNumberInputChange(e.target.value, setDevicePriceInput)}
+                onBlur={(e) => handleNumberBlur(e.target.value, setDevicePrice, setDevicePriceInput, 0, DEVICE_PRESETS[0].price)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={isCalculating}
               />
@@ -442,12 +427,11 @@ export const CoverageCalculator: React.FC = () => {
                 区域大小（公里）
               </label>
               <input
-                type="number"
-                min="1"
-                max="100"
-                step="1"
+                type="text"
+                inputMode="numeric"
                 value={areaSizeInput}
-                onChange={(e) => handleNumberInput(e.target.value, setAreaSize, setAreaSizeInput, 1)}
+                onChange={(e) => handleNumberInputChange(e.target.value, setAreaSizeInput)}
+                onBlur={(e) => handleNumberBlur(e.target.value, setAreaSize, setAreaSizeInput, 1, 10)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={isCalculating}
               />
