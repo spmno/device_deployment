@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useDevices } from '@/context/DeviceContext';
 import { AMapComponent } from '@/components/map/AMapComponent';
-import { DeviceCard } from '@/components/device/DeviceComponents';
 import type { Device } from '@/types/device';
-import { MapPin, ArrowLeft } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 export const DeviceDeployment: React.FC = () => {
   const { devices, deployDevice, undeployDevice } = useDevices();

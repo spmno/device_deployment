@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { Device, DeviceFormData } from '@/types/device';
-import { Plus, Edit2, Trash2, MapPin, DollarSign, Ruler, Upload, X } from 'lucide-react';
+import { Edit2, Trash2, MapPin, DollarSign, Ruler, Upload, X } from 'lucide-react';
 
 interface DeviceFormProps {
   onSubmit: (data: DeviceFormData) => void;
@@ -77,7 +77,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
           required
         >
           <option value="">请选择设备类型</option>
-          <option value="通信基站">通信基站</option>
+          <option value="通信基站">监视设备</option>
           <option value="环境监测">环境监测</option>
           <option value="充电设施">充电设施</option>
           <option value="导航设备">导航设备</option>

@@ -3,9 +3,10 @@ import { DeviceProvider } from '@/context/DeviceContext';
 import { DeviceManagement } from '@/pages/DeviceManagement';
 import { DeviceDeployment } from '@/pages/DeviceDeployment';
 import { Statistics } from '@/pages/Statistics';
-import { Server, MapPin, BarChart3 } from 'lucide-react';
+import { CoverageCalculator } from '@/pages/CoverageCalculator';
+import { Server, MapPin, BarChart3, Calculator } from 'lucide-react';
 
-type Page = 'management' | 'deployment' | 'statistics';
+type Page = 'management' | 'deployment' | 'statistics' | 'coverage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('management');
@@ -18,6 +19,8 @@ function App() {
         return <DeviceDeployment />;
       case 'statistics':
         return <Statistics />;
+      case 'coverage':
+        return <CoverageCalculator />;
       default:
         return <DeviceManagement />;
     }
@@ -72,6 +75,17 @@ function App() {
                 >
                   <BarChart3 className="h-5 w-5" />
                   <span>数据统计</span>
+                </button>
+                <button
+                  onClick={() => setCurrentPage('coverage')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    currentPage === 'coverage'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Calculator className="h-5 w-5" />
+                  <span>覆盖计算</span>
                 </button>
               </div>
             </div>

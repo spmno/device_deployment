@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import type { Device, DeviceFormData, DeploymentData } from '@/types/device';
 
 interface DeviceContextType {
@@ -29,7 +30,7 @@ export const DeviceProvider: React.FC<DeviceProviderProps> = ({ children }) => {
     {
       id: '1',
       name: '基站设备A',
-      type: '通信基站',
+      type: '监视设备',
       price: 50000,
       coverageRange: 10,
       image: 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=400&h=300&fit=crop',

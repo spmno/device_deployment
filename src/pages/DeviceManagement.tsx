@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDevices } from '@/context/DeviceContext';
-import { DeviceForm, DeviceList, DeviceManagementModal } from '@/components/device/DeviceComponents';
+import { DeviceList, DeviceManagementModal } from '@/components/device/DeviceComponents';
 import type { Device, DeviceFormData } from '@/types/device';
 import { Plus } from 'lucide-react';
 

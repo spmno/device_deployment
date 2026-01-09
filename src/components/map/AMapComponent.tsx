@@ -113,11 +113,13 @@ export const AMapComponent: React.FC<AMapProps> = ({
                 <p style="margin: 4px 0; font-size: 13px;">类型: ${device.type}</p>
                 <p style="margin: 4px 0; font-size: 13px;">价格: ¥${device.price.toLocaleString()}</p>
                 <p style="margin: 4px 0; font-size: 13px;">覆盖范围: ${device.coverageRange} 公里</p>
-                <p style="margin: 4px 0; font-size: 13px;">位置: ${device.position.lng.toFixed(4)}, ${device.position.lat.toFixed(4)}</p>
+                ${device.position ? `<p style="margin: 4px 0; font-size: 13px;">位置: ${device.position.lng.toFixed(4)}, ${device.position.lat.toFixed(4)}</p>` : ''}
               </div>
             `,
           });
-          infoWindow.open(mapInstanceRef.current, [device.position.lng, device.position.lat]);
+          if (device.position) {
+            infoWindow.open(mapInstanceRef.current, [device.position.lng, device.position.lat]);
+          }
         });
       }
     });
