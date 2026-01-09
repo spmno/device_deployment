@@ -30,7 +30,8 @@ export const CoverageCalculator: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // 配置参数
-  const [areaSize, setAreaSize] = useState<number>(10); // 区域大小（公里）
+  const [areaLength, setAreaLength] = useState<number>(10); // 区域长度（公里）
+  const [areaWidth, setAreaWidth] = useState<number>(10); // 区域宽度（公里）
   const [deviceType, setDeviceType] = useState<string>(DEVICE_PRESETS[0].name);
   const [coverageRadius, setCoverageRadius] = useState<number>(DEVICE_PRESETS[0].coverageRadius);
   const [devicePrice, setDevicePrice] = useState<number>(DEVICE_PRESETS[0].price);
@@ -40,7 +41,8 @@ export const CoverageCalculator: React.FC = () => {
   // 输入字符串值（用于显示）
   const [coverageRadiusInput, setCoverageRadiusInput] = useState<string>(DEVICE_PRESETS[0].coverageRadius.toString());
   const [devicePriceInput, setDevicePriceInput] = useState<string>(DEVICE_PRESETS[0].price.toString());
-  const [areaSizeInput, setAreaSizeInput] = useState<string>('10');
+  const [areaLengthInput, setAreaLengthInput] = useState<string>('10');
+  const [areaWidthInput, setAreaWidthInput] = useState<string>('10');
 
   // 选择设备类型预设
   const handleDeviceTypeChange = (type: string) => {
@@ -95,10 +97,11 @@ export const CoverageCalculator: React.FC = () => {
     setIsCalculating(true);
 
     const radius = coverageRadius;
-    const size = areaSize;
+    const length = areaLength;
+    const width = areaWidth;
 
     // 验证输入值
-    if (isNaN(radius) || radius <= 0 || isNaN(size) || size < 1) {
+    if (isNaN(radius) || radius <= 0 || isNaN(length) || length < 1 || isNaN(width) || width < 1) {
       setIsCalculating(false);
       return;
     }
@@ -111,8 +114,8 @@ export const CoverageCalculator: React.FC = () => {
 
     // 计算需要的行数和列数
     // 为了确保完全覆盖，需要加1来处理边界
-    const rowCount = Math.ceil(size / rowSpacing) + 1;
-    const colCount = Math.ceil(size / colSpacing) + 1;
+    const rowCount = Math.ceil(length / rowSpacing) + 1;
+    const colCount = Math.ceil(width / colSpacing) + 1;
 
     // 限制最大设备数量，防止性能问题
     const maxDevices = 5000;
@@ -134,7 +137,7 @@ export const CoverageCalculator: React.FC = () => {
         const y = row * rowSpacing;
 
         // 检查是否在区域内（包含半径边界）
-        if (x - radius <= size && y - radius <= size) {
+        if (x - radius <= width && y - radius <= length) {
           devicePositions.push({ x, y, row, col });
           deviceCount++;
         }
@@ -145,7 +148,8 @@ export const CoverageCalculator: React.FC = () => {
     // 计算统计信息
     const finalDeviceCount = devicePositions.length;
     const totalCost = finalDeviceCount * devicePrice;
-    const coverageRate = Math.min(100, (finalDeviceCount * Math.PI * radius * radius) / (size * size) * 100);
+    const area = length * width;
+    const coverageRate = Math.min(100, (finalDeviceCount * Math.PI * radius * radius) / area * 100);
 
     setResult({
       deviceCount: finalDeviceCount,
@@ -158,7 +162,7 @@ export const CoverageCalculator: React.FC = () => {
     });
 
     setIsCalculating(false);
-  }, [coverageRadius, areaSize, devicePrice]);
+  }, [coverageRadius, areaLength, areaWidth, devicePrice]);
 
   // 在Canvas上绘制覆盖图
   const drawCoverageMap = () => {
@@ -183,38 +187,54 @@ export const CoverageCalculator: React.FC = () => {
     ctx.fillStyle = '#f8fafc';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 计算缩放比例
-    const scale = drawArea / areaSize;
+    // 计算缩放比例（基于较长的一边）
+    const maxLength = Math.max(areaLength, areaWidth);
+    const scale = drawArea / maxLength;
 
-    // 绘制区域边框
+    // 计算绘制区域的实际尺寸
+    const drawWidth = areaWidth * scale;
+    const drawLength = areaLength * scale;
+
+    // 绘制区域边框（长方形）
     ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 2;
-    ctx.strokeRect(padding, padding, areaSize * scale, areaSize * scale);
+    ctx.strokeRect(padding, padding, drawWidth, drawLength);
 
     // 绘制网格线（每公里）
     ctx.strokeStyle = '#e2e8f0';
     ctx.lineWidth = 1;
-    for (let i = 0; i <= areaSize; i++) {
-      // 垂直线
+
+    // 垂直网格线（基于宽度）
+    for (let i = 0; i <= areaWidth; i++) {
       ctx.beginPath();
       ctx.moveTo(padding + i * scale, padding);
-      ctx.lineTo(padding + i * scale, padding + areaSize * scale);
+      ctx.lineTo(padding + i * scale, padding + drawLength);
       ctx.stroke();
 
-      // 水平线
+      // 标注宽度刻度
+      if (i % Math.ceil(areaWidth / 10) === 0 || i === areaWidth) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${i}km`, padding + i * scale, padding - 10);
+      }
+    }
+
+    // 水平网格线（基于长度）
+    for (let i = 0; i <= areaLength; i++) {
       ctx.beginPath();
       ctx.moveTo(padding, padding + i * scale);
-      ctx.lineTo(padding + areaSize * scale, padding + i * scale);
+      ctx.lineTo(padding + drawWidth, padding + i * scale);
       ctx.stroke();
 
-      // 标注刻度
-      ctx.fillStyle = '#64748b';
-      ctx.font = '12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${i}km`, padding + i * scale, padding - 10);
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${i}km`, padding - 10, padding + i * scale);
+      // 标注长度刻度
+      if (i % Math.ceil(areaLength / 10) === 0 || i === areaLength) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${i}km`, padding - 10, padding + i * scale);
+      }
     }
 
     // 绘制设备覆盖圆
@@ -421,22 +441,38 @@ export const CoverageCalculator: React.FC = () => {
               </p>
             </div>
 
-            {/* 覆盖面积 */}
+            {/* 覆盖区域 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                区域大小（公里）
+                区域长度（公里）
               </label>
               <input
                 type="text"
                 inputMode="numeric"
-                value={areaSizeInput}
-                onChange={(e) => handleNumberInputChange(e.target.value, setAreaSizeInput)}
-                onBlur={(e) => handleNumberBlur(e.target.value, setAreaSize, setAreaSizeInput, 1, 10)}
+                value={areaLengthInput}
+                onChange={(e) => handleNumberInputChange(e.target.value, setAreaLengthInput)}
+                onBlur={(e) => handleNumberBlur(e.target.value, setAreaLength, setAreaLengthInput, 1, 10)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-2"
+                disabled={isCalculating}
+              />
+              <p className="mt-1 text-xs text-gray-500 mb-4">
+                区域的长度（例如：10 表示 10 公里）
+              </p>
+
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                区域宽度（公里）
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={areaWidthInput}
+                onChange={(e) => handleNumberInputChange(e.target.value, setAreaWidthInput)}
+                onBlur={(e) => handleNumberBlur(e.target.value, setAreaWidth, setAreaWidthInput, 1, 10)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={isCalculating}
               />
               <p className="mt-1 text-xs text-gray-500">
-                正方形区域的边长（例如：10 表示 10km × 10km）
+                区域的宽度（例如：10 表示 10 公里）
               </p>
             </div>
 
@@ -481,7 +517,7 @@ export const CoverageCalculator: React.FC = () => {
               <li>使用六边形排列实现最优覆盖</li>
               <li>确保整个区域无死角覆盖</li>
               <li>最小化设备数量和成本</li>
-              <li>支持自定义区域大小和设备参数</li>
+              <li>支持自定义长方形区域大小和设备参数</li>
             </ul>
           </div>
           <div>
