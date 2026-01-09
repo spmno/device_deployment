@@ -20,10 +20,11 @@ interface CoverageResult {
 
 // 设备类型预设
 const DEVICE_PRESETS = [
-  { name: '通信基站', coverageRadius: 3, price: 100000 },
-  { name: '环境监测', coverageRadius: 2, price: 50000 },
-  { name: '充电设施', coverageRadius: 1.5, price: 30000 },
-  { name: '导航设备', coverageRadius: 2.5, price: 80000 },
+  { name: '监视基站', coverageRadius: 1, price: 150000 },
+  { name: '雷达', coverageRadius: 3, price: 700000 },
+  { name: '光电设备', coverageRadius: 3, price: 400000 },
+  { name: '频谱探测', coverageRadius: 3, price: 250000 },
+  { name: '定向干扰', coverageRadius: 3, price: 180000 },
 ];
 
 export const CoverageCalculator: React.FC = () => {
