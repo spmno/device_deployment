@@ -4,9 +4,10 @@ import { DeviceManagement } from '@/pages/DeviceManagement';
 import { DeviceDeployment } from '@/pages/DeviceDeployment';
 import { Statistics } from '@/pages/Statistics';
 import { CoverageCalculator } from '@/pages/CoverageCalculator';
-import { Server, MapPin, BarChart3, Calculator } from 'lucide-react';
+import { PolygonAreaCalculator } from '@/pages/PolygonAreaCalculator';
+import { Server, MapPin, BarChart3, Calculator, Square } from 'lucide-react';
 
-type Page = 'management' | 'deployment' | 'statistics' | 'coverage';
+type Page = 'management' | 'deployment' | 'statistics' | 'coverage' | 'polygon';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('management');
@@ -21,6 +22,8 @@ function App() {
         return <Statistics />;
       case 'coverage':
         return <CoverageCalculator />;
+      case 'polygon':
+        return <PolygonAreaCalculator />;
       default:
         return <DeviceManagement />;
     }
@@ -86,6 +89,17 @@ function App() {
                 >
                   <Calculator className="h-5 w-5" />
                   <span>覆盖计算</span>
+                </button>
+                <button
+                  onClick={() => setCurrentPage('polygon')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    currentPage === 'polygon'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Square className="h-5 w-5" />
+                  <span>多边形面积</span>
                 </button>
               </div>
             </div>
