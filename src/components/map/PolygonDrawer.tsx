@@ -16,10 +16,14 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const mouseToolRef = useRef<any>(null);
+  const placeSearchRef = useRef<any>(null);
   const polygonRef = useRef<any>(null);
   const [drawing, setDrawing] = useState(false);
   const [vertices, setVertices] = useState<[number, number][]>([]);
   const [area, setArea] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // 初始化地图和插件
   useEffect(() => {
@@ -39,6 +43,8 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
         'AMap.ToolBar',
         'AMap.Scale',
         'AMap.MouseTool',
+        'AMap.PlaceSearch',
+        'AMap.AutoComplete',
       ], () => {
         // 添加工具栏
         const toolbar = new window.AMap.ToolBar();
@@ -49,6 +55,29 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
 
         // 初始化鼠标工具
         mouseToolRef.current = new window.AMap.MouseTool(mapInstanceRef.current);
+
+        // 初始化地点搜索
+        placeSearchRef.current = new window.AMap.PlaceSearch({
+          pageSize: 10,
+          pageIndex: 1,
+          map: mapInstanceRef.current,
+        });
+
+        // 监听搜索完成事件
+        placeSearchRef.current.on('complete', (result: any) => {
+          setIsSearching(false);
+          if (result.info === 'OK') {
+            setSearchResults(result.poiList.pois);
+          } else {
+            setSearchResults([]);
+          }
+        });
+
+        placeSearchRef.current.on('error', (result: any) => {
+          setIsSearching(false);
+          console.error('搜索出错:', result);
+          setSearchResults([]);
+        });
       });
     }
 
@@ -60,6 +89,40 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
       }
     };
   }, []);
+
+  // 处理搜索
+  const handleSearch = () => {
+    if (!searchQuery.trim() || !placeSearchRef.current) return;
+    
+    setIsSearching(true);
+    setSearchResults([]);
+    
+    // 执行地点搜索
+    placeSearchRef.current.search(searchQuery);
+  };
+
+  // 处理搜索结果点击
+  const handleResultClick = (result: any) => {
+    if (!mapInstanceRef.current) return;
+    
+    const location = result.location;
+    if (location) {
+      // 将地图中心移动到搜索结果位置
+      mapInstanceRef.current.setCenter([location.lng, location.lat]);
+      mapInstanceRef.current.setZoom(15);
+      
+      // 添加标记
+      const marker = new window.AMap.Marker({
+        position: [location.lng, location.lat],
+        title: result.name,
+      });
+      marker.setMap(mapInstanceRef.current);
+      
+      // 清除之前的搜索结果
+      setSearchResults([]);
+      setSearchQuery(result.name);
+    }
+  };
 
   // 开始绘制多边形
   const startDrawing = () => {
@@ -159,7 +222,54 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
     <div className="relative w-full h-full">
       <div ref={mapRef} className="w-full h-full" style={{ minHeight: '500px' }} />
       
-      <div className="absolute top-4 left-4 bg-white bg-opacity-90 px-4 py-2 rounded-lg shadow-md z-10 space-y-2">
+      {/* 左上角：搜索功能区 */}
+      <div className="absolute top-4 left-4 bg-white bg-opacity-90 px-4 py-3 rounded-lg shadow-md z-10 space-y-2 min-w-64">
+        <h3 className="text-sm font-medium text-gray-700 mb-2">地点搜索</h3>
+        
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="输入地点名称..."
+              className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <button
+              onClick={handleSearch}
+              disabled={isSearching || !searchQuery.trim()}
+              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isSearching ? '搜索中...' : '搜索'}
+            </button>
+          </div>
+          
+          {searchResults.length > 0 && (
+            <div className="border border-gray-200 rounded max-h-48 overflow-y-auto">
+              <div className="p-2 bg-gray-50 border-b border-gray-200">
+                <p className="text-xs text-gray-600">搜索结果：</p>
+              </div>
+              <div className="space-y-1 p-1">
+                {searchResults.map((result, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleResultClick(result)}
+                    className="w-full text-left px-2 py-1.5 text-xs hover:bg-gray-100 rounded truncate"
+                    title={`${result.name} - ${result.address || '无地址信息'}`}
+                  >
+                    <div className="font-medium text-gray-800">{result.name}</div>
+                    <div className="text-gray-600 truncate">{result.address || '无地址信息'}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* 右上角：多边形绘制功能区 */}
+      <div className="absolute top-4 right-4 bg-white bg-opacity-90 px-4 py-3 rounded-lg shadow-md z-10 space-y-2 min-w-64">
         <h3 className="text-sm font-medium text-gray-700">多边形面积计算</h3>
         
         <div className="flex flex-col gap-2">
@@ -175,7 +285,7 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
             onClick={clearPolygon}
             className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
           >
-            清除
+            清除多边形
           </button>
         </div>
         
