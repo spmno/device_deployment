@@ -22,6 +22,7 @@ export const DistrictAreaCalculator: React.FC = () => {
   const districtSearchRef = useRef<any>(null);
   const polygonRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchLevel, setSearchLevel] = useState<'district' | 'street'>('district');
   const [isSearching, setIsSearching] = useState(false);
   const [districtData, setDistrictData] = useState<DistrictData | null>(null);
   const [history, setHistory] = useState<DistrictData[]>([]);
@@ -56,7 +57,7 @@ export const DistrictAreaCalculator: React.FC = () => {
         districtSearchRef.current = new window.AMap.DistrictSearch({
           subdistrict: 0, // 不返回下级行政区
           extensions: 'all', // 返回行政区边界坐标组
-          level: 'district', // 查询行政级别为区县
+          level: searchLevel, // 查询行政级别：district（区县）或 street（乡镇/街道）
         });
       });
     }
@@ -68,7 +69,7 @@ export const DistrictAreaCalculator: React.FC = () => {
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [searchLevel]);
 
   // 处理搜索
   const handleSearch = () => {
@@ -223,7 +224,8 @@ export const DistrictAreaCalculator: React.FC = () => {
             <div className="mt-4 text-sm text-gray-600">
               <p>💡 使用说明：</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>输入行政区名称（如：海淀区、朝阳区、北京市等）</li>
+                <li>选择行政级别：区县级或乡镇/街道级</li>
+                <li>输入行政区名称（如：海淀区、朝阳区、万寿路街道、十八里店乡等）</li>
                 <li>点击"搜索"按钮查询行政区</li>
                 <li>系统会自动将地图中心移动到该行政区并高亮显示</li>
                 <li>自动计算行政区面积</li>
@@ -244,23 +246,36 @@ export const DistrictAreaCalculator: React.FC = () => {
             {/* 搜索框 */}
             <div>
               <h3 className="font-medium text-gray-900 mb-2">行政区搜索</h3>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="输入行政区名称..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <button
-                  onClick={handleSearch}
-                  disabled={isSearching || !searchQuery.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  <Search className="h-4 w-4" />
-                  {isSearching ? '搜索中...' : '搜索'}
-                </button>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">行政级别</label>
+                  <select
+                    value={searchLevel}
+                    onChange={(e) => setSearchLevel(e.target.value as 'district' | 'street')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="district">区县级</option>
+                    <option value="street">乡镇/街道级</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder="输入行政区名称..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    onClick={handleSearch}
+                    disabled={isSearching || !searchQuery.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <Search className="h-4 w-4" />
+                    {isSearching ? '搜索中...' : '搜索'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -402,7 +417,8 @@ export const DistrictAreaCalculator: React.FC = () => {
           <div>
             <h3 className="font-medium text-gray-900 mb-2">行政区搜索</h3>
             <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-              <li>支持输入行政区划名称（如：海淀区、朝阳区）</li>
+              <li>支持区县级和乡镇/街道级查询</li>
+              <li>支持输入行政区划名称（如：海淀区、朝阳区、万寿路街道）</li>
               <li>支持不同级别行政区划查询</li>
               <li>自动定位到行政区中心</li>
               <li>高亮显示行政区边界</li>
