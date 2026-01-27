@@ -27,7 +27,7 @@ export const DistrictAreaCalculator: React.FC = () => {
   const [districtData, setDistrictData] = useState<DistrictData | null>(null);
   const [history, setHistory] = useState<DistrictData[]>([]);
 
-  // 初始化地图和插件
+  // 初始化地图
   useEffect(() => {
     if (!window.AMap || !mapRef.current) return;
 
@@ -52,13 +52,6 @@ export const DistrictAreaCalculator: React.FC = () => {
 
         const scale = new window.AMap.Scale();
         mapInstanceRef.current.addControl(scale);
-
-        // 初始化行政区搜索
-        districtSearchRef.current = new window.AMap.DistrictSearch({
-          subdistrict: 0, // 不返回下级行政区
-          extensions: 'all', // 返回行政区边界坐标组
-          level: searchLevel, // 查询行政级别：district（区县）或 street（乡镇/街道）
-        });
       });
     }
 
@@ -69,6 +62,17 @@ export const DistrictAreaCalculator: React.FC = () => {
         mapInstanceRef.current = null;
       }
     };
+  }, []);
+
+  // 初始化行政区搜索（根据搜索级别）
+  useEffect(() => {
+    if (!window.AMap) return;
+
+    districtSearchRef.current = new window.AMap.DistrictSearch({
+      subdistrict: 0, // 不返回下级行政区
+      extensions: 'all', // 返回行政区边界坐标组
+      level: searchLevel, // 查询行政级别：district（区县）或 street（乡镇/街道）
+    });
   }, [searchLevel]);
 
   // 处理搜索
