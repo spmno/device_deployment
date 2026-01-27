@@ -5,9 +5,11 @@ import { DeviceDeployment } from '@/pages/DeviceDeployment';
 import { Statistics } from '@/pages/Statistics';
 import { CoverageCalculator } from '@/pages/CoverageCalculator';
 import { PolygonAreaCalculator } from '@/pages/PolygonAreaCalculator';
-import { Server, MapPin, BarChart3, Calculator, Square } from 'lucide-react';
+import { DistrictAreaCalculator } from '@/pages/DistrictAreaCalculator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Server, MapPin, BarChart3, Calculator } from 'lucide-react';
 
-type Page = 'management' | 'deployment' | 'statistics' | 'coverage' | 'polygon';
+type Page = 'management' | 'deployment' | 'statistics' | 'coverage' | 'polygon' | 'district';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('management');
@@ -24,6 +26,8 @@ function App() {
         return <CoverageCalculator />;
       case 'polygon':
         return <PolygonAreaCalculator />;
+      case 'district':
+        return <DistrictAreaCalculator />;
       default:
         return <DeviceManagement />;
     }
@@ -90,17 +94,28 @@ function App() {
                   <Calculator className="h-5 w-5" />
                   <span>覆盖计算</span>
                 </button>
-                <button
-                  onClick={() => setCurrentPage('polygon')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    currentPage === 'polygon'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Square className="h-5 w-5" />
-                  <span>多边形面积</span>
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        currentPage === 'polygon' || currentPage === 'district'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Calculator className="h-5 w-5" />
+                      <span>面积计算</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setCurrentPage('polygon')}>
+                      多边形面积
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setCurrentPage('district')}>
+                      行政区面积
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
