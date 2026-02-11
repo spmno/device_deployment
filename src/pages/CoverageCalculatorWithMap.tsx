@@ -90,7 +90,7 @@ export const CoverageCalculatorWithMap: React.FC = () => {
   const [hasConfirmedCenter, setHasConfirmedCenter] = useState(false);
   const placeSearchRef = useRef<any>(null);
 
-  // 初始化地图
+  // 初始化地图（只执行一次）
   useEffect(() => {
     if (!window.AMap || !mapRef.current) return;
 
@@ -136,14 +136,12 @@ export const CoverageCalculatorWithMap: React.FC = () => {
         });
       });
 
-      // 点击地图设置中心点（仅在未确认中心点时）
+      // 点击地图设置中心点
       mapInstanceRef.current.on('click', (e: any) => {
-        if (!hasConfirmedCenter) {
-          const lng = e.lnglat.lng;
-          const lat = e.lnglat.lat;
-          setCenterPoint({ lng, lat });
-          updateCenterMarker(lng, lat);
-        }
+        const lng = e.lnglat.lng;
+        const lat = e.lnglat.lat;
+        setCenterPoint({ lng, lat });
+        updateCenterMarker(lng, lat);
       });
     }
 
@@ -153,6 +151,24 @@ export const CoverageCalculatorWithMap: React.FC = () => {
         mapInstanceRef.current = null;
       }
     };
+  }, []);
+
+  // 监听 hasConfirmedCenter 变化，控制地图点击事件
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    // 移除旧的点击事件
+    mapInstanceRef.current.off('click');
+
+    // 添加新的点击事件
+    mapInstanceRef.current.on('click', (e: any) => {
+      if (!hasConfirmedCenter) {
+        const lng = e.lnglat.lng;
+        const lat = e.lnglat.lat;
+        setCenterPoint({ lng, lat });
+        updateCenterMarker(lng, lat);
+      }
+    });
   }, [hasConfirmedCenter]);
 
   // 更新中心点标记
