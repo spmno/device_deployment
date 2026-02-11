@@ -3,7 +3,7 @@ import { DeviceProvider } from '@/context/DeviceContext';
 import { DeviceManagement } from '@/pages/DeviceManagement';
 import { DeviceDeployment } from '@/pages/DeviceDeployment';
 import { Statistics } from '@/pages/Statistics';
-import { CoverageCalculator } from '@/pages/CoverageCalculator';
+import { CoverageCalculatorWithMap } from '@/pages/CoverageCalculatorWithMap';
 import { PolygonAreaCalculator } from '@/pages/PolygonAreaCalculator';
 import { DistrictAreaCalculator } from '@/pages/DistrictAreaCalculator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -47,7 +47,7 @@ function App() {
       case 'statistics':
         return <Statistics />;
       case 'coverage':
-        return <CoverageCalculator />;
+        return <CoverageCalculatorWithMap />;
       case 'polygon':
         return <PolygonAreaCalculator />;
       case 'district':
