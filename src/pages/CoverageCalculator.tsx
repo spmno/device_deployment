@@ -27,7 +27,17 @@ interface CoverageResult {
   totalCost: number;
   coverageRate: number;
   devicePositions: DevicePosition[];
+  deviceShape: 'circle' | 'hexagon';
 }
+
+// 设备形状类型
+type DeviceShape = 'circle' | 'hexagon';
+
+// 设备形状预设
+const DEVICE_SHAPES = [
+  { value: 'circle' as const, label: '圆形覆盖' },
+  { value: 'hexagon' as const, label: '六边形覆盖' },
+];
 
 // 设备类型预设
 const DEVICE_PRESETS = [
@@ -49,6 +59,7 @@ export const CoverageCalculator: React.FC = () => {
   const [devicePrice, setDevicePrice] = useState<number>(DEVICE_PRESETS[0].price);
   const [result, setResult] = useState<CoverageResult | null>(null);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
+  const [deviceShape, setDeviceShape] = useState<DeviceShape>('circle');
 
   // 输入字符串值（用于显示）
   const [coverageRadiusInput, setCoverageRadiusInput] = useState<string>(DEVICE_PRESETS[0].coverageRadius.toString());
@@ -113,8 +124,28 @@ export const CoverageCalculator: React.FC = () => {
       return;
     }
 
-    const rowSpacing = radius * Math.sqrt(3);
-    const colSpacing = radius * 1.5;
+    // 根据选择的形状计算不同的间距
+    let rowSpacing: number;
+    let colSpacing: number;
+    let horizontalOffset: number;
+
+    if (deviceShape === 'hexagon') {
+      // 六边形覆盖：平边朝上（像蜂巢那样）
+      // 正六边形参数（平边朝上）：
+      // - 外接圆半径 = radius
+      // - 边长 = radius
+      // - 高度（垂直）= 2 * radius（从顶点到底部的距离）
+      // - 宽度（水平）= radius * sqrt(3)（对边之间的距离）
+      // 蜂窝状排列时，六边形边与边贴合：
+      rowSpacing = radius * 1.5;              // 垂直方向中心距 = 高度的3/4
+      colSpacing = radius * Math.sqrt(3);     // 水平方向中心距 = 宽度
+      horizontalOffset = (radius * Math.sqrt(3)) / 2;  // 奇数行偏移 = 列间距的一半
+    } else {
+      // 圆形覆盖：经典的六边形排列
+      rowSpacing = radius * Math.sqrt(3);   // 垂直间距
+      colSpacing = radius * 1.5;             // 水平间距
+      horizontalOffset = radius * 0.75;      // 奇数行水平偏移
+    }
 
     const rowCount = Math.ceil(length / rowSpacing) + 1;
     const colCount = Math.ceil(width / colSpacing) + 1;
@@ -127,7 +158,8 @@ export const CoverageCalculator: React.FC = () => {
       for (let col = 0; col < colCount; col++) {
         if (deviceCount >= maxDevices) break;
 
-        const xOffset = row % 2 === 0 ? 0 : colSpacing / 2;
+        // 奇数行偏移
+        const xOffset = row % 2 === 0 ? 0 : horizontalOffset;
         const x = col * colSpacing + xOffset;
         const y = row * rowSpacing;
 
@@ -142,7 +174,17 @@ export const CoverageCalculator: React.FC = () => {
     const finalDeviceCount = devicePositions.length;
     const totalCost = finalDeviceCount * devicePrice;
     const area = length * width;
-    const coverageRate = Math.min(100, (finalDeviceCount * Math.PI * radius * radius) / area * 100);
+
+    // 根据形状计算覆盖率
+    let coverageRate: number;
+    if (deviceShape === 'hexagon') {
+      // 正六边形面积 = (3 * sqrt(3) / 2) * r^2
+      const hexagonArea = (3 * Math.sqrt(3) / 2) * radius * radius;
+      coverageRate = Math.min(100, (finalDeviceCount * hexagonArea) / area * 100);
+    } else {
+      // 圆形面积 = π * r^2
+      coverageRate = Math.min(100, (finalDeviceCount * Math.PI * radius * radius) / area * 100);
+    }
 
     setResult({
       deviceCount: finalDeviceCount,
@@ -152,10 +194,11 @@ export const CoverageCalculator: React.FC = () => {
       totalCost,
       coverageRate,
       devicePositions,
+      deviceShape,
     });
 
     setIsCalculating(false);
-  }, [coverageRadius, areaLength, areaWidth, devicePrice]);
+  }, [coverageRadius, areaLength, areaWidth, devicePrice, deviceShape]);
 
   // 在Canvas上绘制覆盖图
   const drawCoverageMap = () => {
@@ -242,20 +285,47 @@ export const CoverageCalculator: React.FC = () => {
       }
     }
 
-    // 绘制设备覆盖圆
+    // 绘制六边形的辅助函数
+    const drawHexagon = (centerX: number, centerY: number, radius: number) => {
+      ctx.beginPath();
+      for (let i = 0; i <= 6; i++) {
+        // 平边朝上的六边形，从-30度（-π/6）开始
+        const angle = (Math.PI / 3) * i - Math.PI / 6;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    };
+
+    // 绘制设备覆盖区域（圆形或六边形）
     result.devicePositions.forEach((device, index) => {
       const centerX = padding + device.x * scale;
       const centerY = padding + device.y * scale;
       const radius = coverageRadius * scale;
 
-      // 绘制覆盖圆 - 霓虹效果
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      // 为所有形状添加统一的填充和描边样式
       ctx.fillStyle = 'rgba(6, 182, 212, 0.15)';
-      ctx.fill();
       ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
       ctx.lineWidth = 1;
-      ctx.stroke();
+
+      // 根据选择的形状绘制覆盖区域
+      if (result.deviceShape === 'hexagon') {
+        // 绘制覆盖六边形 - 霓虹效果
+        drawHexagon(centerX, centerY, radius);
+      } else {
+        // 绘制覆盖圆 - 霓虹效果
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
 
       // 绘制设备点
       ctx.beginPath();
@@ -284,13 +354,21 @@ export const CoverageCalculator: React.FC = () => {
     ctx.textBaseline = 'top';
     ctx.fillText('图例: ', legendX, legendY - 25);
 
-    ctx.beginPath();
-    ctx.arc(legendX + 60, legendY - 18, 10, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(6, 182, 212, 0.3)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    // 根据形状绘制图例
+    if (result.deviceShape === 'hexagon') {
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.3)';
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
+      ctx.lineWidth = 1;
+      drawHexagon(legendX + 60, legendY - 18, 10);
+    } else {
+      ctx.beginPath();
+      ctx.arc(legendX + 60, legendY - 18, 10, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.3)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '12px sans-serif';
@@ -307,7 +385,7 @@ export const CoverageCalculator: React.FC = () => {
 
   useEffect(() => {
     drawCoverageMap();
-  }, [result, coverageRadius]);
+  }, [result, coverageRadius, deviceShape]);
 
   // 统计卡片组件
   const StatCard = ({
@@ -339,7 +417,7 @@ export const CoverageCalculator: React.FC = () => {
       {/* 页面标题 */}
       <div>
         <h1 className="text-3xl font-bold title-glow mb-1">设备覆盖计算</h1>
-        <p className="text-slate-400 text-sm">使用六边形排列算法计算最优设备部署方案</p>
+        <p className="text-slate-400 text-sm">使用最优排列算法计算设备部署方案，支持圆形和六边形覆盖形状</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -438,6 +516,28 @@ export const CoverageCalculator: React.FC = () => {
               </select>
             </div>
 
+            {/* 设备形状选择 */}
+            <div>
+              <label className="block text-sm font-medium text-cyan-400 mb-2">
+                覆盖形状
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {DEVICE_SHAPES.map((shape) => (
+                  <button
+                    key={shape.value}
+                    onClick={() => setDeviceShape(shape.value)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      deviceShape === shape.value
+                        ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400'
+                        : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600'
+                    } border`}
+                  >
+                    {shape.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* 覆盖半径 */}
             <div>
               <label className="block text-sm font-medium text-cyan-400 mb-2">
@@ -512,8 +612,10 @@ export const CoverageCalculator: React.FC = () => {
                 <span className="text-sm font-medium">算法说明</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                采用六边形排列算法，这是覆盖平面区域最高效的方法之一。
-                设备按交错排列，相邻行偏移半个列间距，可以最小化重叠并实现无死角覆盖。
+                {deviceShape === 'hexagon' 
+                  ? '采用六边形排列和六边形覆盖，这是覆盖平面区域最高效的方法之一。设备按交错排列，相邻行偏移半个列间距，形成蜂窝状的无死角覆盖。'
+                  : '采用六边形排列算法排列设备，覆盖区域为圆形。设备按交错排列，相邻行偏移半个列间距，可以最小化重叠并实现高效覆盖。'
+                }
               </p>
             </div>
 
@@ -564,15 +666,15 @@ export const CoverageCalculator: React.FC = () => {
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2" />
-                确保整个区域无死角覆盖
+                支持圆形和六边形两种覆盖形状
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2" />
+                六边形覆盖可形成蜂窝状无死角覆盖
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2" />
                 最小化设备数量和成本
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2" />
-                支持自定义长方形区域大小和设备参数
               </li>
             </ul>
           </div>
@@ -589,11 +691,11 @@ export const CoverageCalculator: React.FC = () => {
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-2" />
-                青色圆圈表示设备覆盖范围
+                青色图形表示设备覆盖范围
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-2" />
-                网格线每公里标注一次
+                六边形形状形成蜂窝状视觉效果
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-2" />
